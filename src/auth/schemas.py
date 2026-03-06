@@ -18,10 +18,10 @@ class UserCreateModel(BaseModel):
     model_config = {
         "json_schema_extra": {
             "example": {
-                "first_name": "John",
-                "last_name": "Doe",
-                "username": "johndoe",
-                "email": "johndoe123@co.com",
+                "first_name": "Raghava",
+                "last_name": "K",
+                "username": "RaghavaK",
+                "email": "raghavak@co.com",
                 "password": "testpass123",
             }
         }
