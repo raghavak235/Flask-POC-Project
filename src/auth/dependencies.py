@@ -7,7 +7,6 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.db.main import get_session
 from src.db.models import User
-from src.db.redis import token_in_blocklist
 
 from .service import UserService
 from .utils import decode_token
@@ -34,9 +33,6 @@ class TokenBearer(HTTPBearer):
         token_data = decode_token(token)
 
         if not self.token_valid(token):
-            raise InvalidToken()
-
-        if await token_in_blocklist(token_data["jti"]):
             raise InvalidToken()
 
         self.verify_token_data(token_data)
