@@ -1,6 +1,6 @@
 import uuid
 from datetime import date, datetime
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -16,6 +16,7 @@ class Book(BaseModel):
     published_date: date
     page_count: int
     language: str
+    description: Optional[str] = None
     created_at: datetime
     update_at: datetime
 
@@ -32,6 +33,7 @@ class BookCreateModel(BaseModel):
     published_date: str
     page_count: int
     language: str
+    description: Optional[str] = None
 
 
 class BookUpdateModel(BaseModel):
@@ -40,3 +42,4 @@ class BookUpdateModel(BaseModel):
     publisher: str
     page_count: int
     language: str
+    description: Optional[str] = None

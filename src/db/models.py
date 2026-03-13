@@ -68,6 +68,7 @@ class Book(SQLModel, table=True):
     published_date: date
     page_count: int
     language: str
+    description: Optional[str] = Field(default=None, sa_column=Column(pg.VARCHAR, nullable=True))
     user_uid: Optional[uuid.UUID] = Field(default=None, foreign_key="users.uid")
     created_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
     update_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
