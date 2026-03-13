@@ -1,6 +1,10 @@
 # src/auth/routes.py
+<<<<<<< HEAD
 from fastapi import APIRouter, Depends, status, BackgroundTasks, Request
 from fastapi.exceptions import HTTPException
+=======
+from fastapi import APIRouter, Depends, status
+>>>>>>> 9b12d52cf46ab299c3351154e2c5730af8d1e199
 from fastapi.responses import JSONResponse
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -12,15 +16,12 @@ from .dependencies import (
 )
 from .schemas import (
     UserBooksModel,
-    UserCreateModel,
     UserLoginModel,
-    EmailModel,
-    PasswordResetRequestModel,
-    PasswordResetConfirmModel,
 )
 from .service import UserService
 from .utils import (
     verify_password,
+<<<<<<< HEAD
     generate_passwd_hash,
     create_url_safe_token,
     decode_url_safe_token,
@@ -30,11 +31,18 @@ from .utils import (
 from src.errors import UserAlreadyExists, UserNotFound, InvalidCredentials
 from src.config import Config
 from src.tasks import send_email
+=======
+    create_session_cookie,
+    SESSION_EXPIRY,
+)
+from src.errors import InvalidCredentials
+>>>>>>> 9b12d52cf46ab299c3351154e2c5730af8d1e199
 
 auth_router = APIRouter()
 user_service = UserService()
 role_checker = RoleChecker(["admin", "user"])
 
+<<<<<<< HEAD
 
 @auth_router.post("/send_mail")
 async def send_mail(emails: EmailModel, bg_tasks: BackgroundTasks):
@@ -95,6 +103,8 @@ async def verify_user_account(token: str, session: AsyncSession = Depends(get_se
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
     )
 
+=======
+>>>>>>> 9b12d52cf46ab299c3351154e2c5730af8d1e199
 
 @auth_router.post("/login")
 async def login_users(
@@ -148,6 +158,7 @@ async def get_current_user_route(
 async def logout():
     response = JSONResponse(
         content={"message": "Logged Out Successfully"},
+<<<<<<< HEAD
         status_code=status.HTTP_200_OK,
     )
     response.delete_cookie(key="session")
@@ -208,3 +219,9 @@ async def reset_account_password(
         content={"message": "Error occured during password reset."},
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
     )
+=======
+        status_code=status.HTTP_200_OK,
+    )
+    response.delete_cookie(key="session")
+    return response
+>>>>>>> 9b12d52cf46ab299c3351154e2c5730af8d1e199
