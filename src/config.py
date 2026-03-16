@@ -12,27 +12,6 @@ class Settings(BaseSettings):
     # Hashing algorithm for JWTs (e.g. HS256, RS256)
     JWT_ALGORITHM: str
 
-    # --- Email (FastMail / SMTP) ---
-    # SMTP login credentials
-    MAIL_USERNAME: str
-    MAIL_PASSWORD: str
-    # Sender address that appears in the "From" field
-    MAIL_FROM: str
-    # Human-readable sender name (e.g. "MyApp Notifications")
-    MAIL_FROM_NAME: str
-    # SMTP server hostname (e.g. smtp.gmail.com)
-    MAIL_SERVER: str
-    # SMTP port (587 for STARTTLS, 465 for SSL, 25 for plain)
-    MAIL_PORT: int
-    # Use STARTTLS to upgrade the connection to TLS after connecting (default: True)
-    MAIL_STARTTLS: bool = True
-    # Use implicit SSL/TLS from the start (mutually exclusive with STARTTLS; default: False)
-    MAIL_SSL_TLS: bool = False
-    # Whether to send SMTP login credentials (default: True)
-    USE_CREDENTIALS: bool = True
-    # Whether to validate the SMTP server's SSL certificate (default: True)
-    VALIDATE_CERTS: bool = True
-
     # --- Application ---
     # Public domain of the app, used in email links and CORS (e.g. https://myapp.com)
     DOMAIN: str
