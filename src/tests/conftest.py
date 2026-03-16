@@ -1,31 +1,22 @@
 import uuid
 from datetime import date, datetime
-from unittest.mock import AsyncMock, MagicMock, Mock
+from unittest.mock import MagicMock
 
 import pytest
-import pytest_asyncio
 from fastapi.testclient import TestClient
 
 from src import app
-from src.auth.dependencies import AccessTokenBearer, RefreshTokenBearer, RoleChecker
+from src.auth.dependencies import get_current_user
+from src.books.repository import BookRepository
 from src.books.service import BookService
 from src.db.main import get_session
-from src.db.models import Book
+from src.books.schemas import Book
 
 
-# ─────────────────────────────────────────────
-# Dependency Overrides
-# ─────────────────────────────────────────────
-
-access_token_bearer = AccessTokenBearer()
-refresh_token_bearer = RefreshTokenBearer()
-role_checker = RoleChecker(["admin"])
-
-# Override FastAPI dependencies with mocks
 app.dependency_overrides[get_session] = lambda: MagicMock()
-app.dependency_overrides[access_token_bearer] = Mock()
-app.dependency_overrides[refresh_token_bearer] = Mock()
-app.dependency_overrides[role_checker] = Mock()
+app.dependency_overrides[get_current_user] = lambda: MagicMock(
+    uid=uuid.uuid4(), role="admin", email="test@example.com"
+)
 
 
 
@@ -40,16 +31,13 @@ def test_client():
 
 @pytest.fixture
 def book_service():
-    return BookService()
+    repository = MagicMock(spec=BookRepository)
+    return BookService(repository)
 
 
 @pytest.fixture
-def mock_session():
-    """Async session fixture used by service-level tests."""
-    session = AsyncMock()
-    result = MagicMock()
-    session.execute = AsyncMock(return_value=result)
-    return session, result
+def mock_book_repository(book_service):
+    return book_service.repository
 
 
 @pytest.fixture
@@ -73,13 +61,12 @@ def fake_user_service():
 def test_book():
     return Book(
         uid=uuid.uuid4(),
-        user_uid=uuid.uuid4(),
         title="sample title",
         author="sample author",
         publisher="sample publisher",
         page_count=200,
         language="English",
-        published_date=datetime.now(),
+        published_date=date.today(),
         created_at=datetime.now(),
         update_at=datetime.now(),
     )

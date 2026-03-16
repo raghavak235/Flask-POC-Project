@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 from fastapi import status
 from fastapi.exceptions import HTTPException
@@ -6,12 +7,12 @@ from sqlmodel import desc, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.auth.service import UserService
+from src.books.repository import SqlModelBookRepository
 from src.books.service import BookService
 from src.db.models import Review
 
 from .schemas import ReviewCreateModel
 
-book_service = BookService()
 user_service = UserService()
 
 
@@ -24,7 +25,8 @@ class ReviewService:
         session: AsyncSession,
     ):
         try:
-            book = await book_service.get_book(book_uid=book_uid, session=session)
+            book_service = BookService(SqlModelBookRepository(session))
+            book = await book_service.get_book(book_uid=book_uid)
             user = await user_service.get_user_by_email(
                 email=user_email, session=session
             )
@@ -39,13 +41,21 @@ class ReviewService:
                     detail="User not found", status_code=status.HTTP_404_NOT_FOUND
                 )
 
-            new_review = Review(**review_data_dict, user=user, book=book)
+            new_review = Review(
+                **review_data_dict,
+                user_uid=user.uid,
+                book_uid=uuid.UUID(book_uid),
+            )
 
             session.add(new_review)
 
             await session.commit()
+            await session.refresh(new_review)
 
             return new_review
+
+        except HTTPException:
+            raise
 
         except Exception as e:
             logging.exception(e)

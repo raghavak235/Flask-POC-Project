@@ -19,10 +19,14 @@ class Book(BaseModel):
     created_at: datetime
     update_at: datetime
 
+    model_config = {"from_attributes": True}
+
 
 class BookDetailModel(Book):
     reviews: List[ReviewModel]
     # tags:List[TagModel]
+
+    model_config = {"from_attributes": True}
 
 
 class BookCreateModel(BaseModel):

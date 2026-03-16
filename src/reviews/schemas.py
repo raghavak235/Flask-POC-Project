@@ -14,6 +14,8 @@ class ReviewModel(BaseModel):
     created_at: datetime
     update_at: datetime
 
+    model_config = {"from_attributes": True}
+
 
 class ReviewCreateModel(BaseModel):
     rating: int = Field(lt=5)

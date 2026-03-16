@@ -1,53 +1,47 @@
 import uuid
 from datetime import date, datetime
-from unittest.mock import AsyncMock
 
 import pytest
 
-from src.books.schemas import Book, BookCreateModel, BookDetailModel, BookUpdateModel
+from src.books.schemas import Book, BookCreateModel, BookUpdateModel
 
-# NOTE: make_book, book_service, mock_session fixtures all come from conftest.py
+# NOTE: make_book, book_service, and mock_book_repository fixtures all come from conftest.py
 
-
-from unittest.mock import MagicMock
 
 def make_book(**kwargs):
-    book = MagicMock()
-    book.uid = kwargs.get("uid", uuid.uuid4())
-    book.title = kwargs.get("title", "Test Book")
-    book.author = kwargs.get("author", "Test Author")
-    book.publisher = kwargs.get("publisher", "Test Publisher")
-    book.published_date = kwargs.get("published_date", date(2024, 1, 1))
-    book.page_count = kwargs.get("page_count", 300)
-    book.language = kwargs.get("language", "English")
-    book.user_uid = kwargs.get("user_uid", str(uuid.uuid4()))
-    book.created_at = kwargs.get("created_at", datetime.now())
-    book.update_at = kwargs.get("update_at", datetime.now())
-    return book
+    return Book(
+        uid=kwargs.get("uid", uuid.uuid4()),
+        title=kwargs.get("title", "Test Book"),
+        author=kwargs.get("author", "Test Author"),
+        publisher=kwargs.get("publisher", "Test Publisher"),
+        published_date=kwargs.get("published_date", date(2024, 1, 1)),
+        page_count=kwargs.get("page_count", 300),
+        language=kwargs.get("language", "English"),
+        created_at=kwargs.get("created_at", datetime.now()),
+        update_at=kwargs.get("update_at", datetime.now()),
+    )
 
 # ─────────────────────────────────────────────
 # get_all_books
 # ─────────────────────────────────────────────
 
-@pytest.mark.asyncio
-async def test_get_all_books_returns_list(book_service, mock_session):
-    session, result = mock_session
+@pytest.mark.anyio
+async def test_get_all_books_returns_list(book_service, mock_book_repository):
     books = [make_book(title="Book A"), make_book(title="Book B")]
-    result.scalars.return_value.all.return_value = books
+    mock_book_repository.get_all.return_value = books
 
-    response = await book_service.get_all_books(session)
+    response = await book_service.get_all_books()
 
     assert response == books
     assert len(response) == 2
-    session.execute.assert_called_once()
+    mock_book_repository.get_all.assert_awaited_once()
 
 
-@pytest.mark.asyncio
-async def test_get_all_books_returns_empty_list(book_service, mock_session):
-    session, result = mock_session
-    result.scalars.return_value.all.return_value = []
+@pytest.mark.anyio
+async def test_get_all_books_returns_empty_list(book_service, mock_book_repository):
+    mock_book_repository.get_all.return_value = []
 
-    response = await book_service.get_all_books(session)
+    response = await book_service.get_all_books()
 
     assert response == []
 
@@ -56,25 +50,24 @@ async def test_get_all_books_returns_empty_list(book_service, mock_session):
 # get_user_books
 # ─────────────────────────────────────────────
 
-@pytest.mark.asyncio
-async def test_get_user_books_returns_books_for_user(book_service, mock_session):
-    session, result = mock_session
-    user_uid = str(uuid.uuid4())
-    books = [make_book(user_uid=user_uid), make_book(user_uid=user_uid)]
-    result.scalars.return_value.all.return_value = books
+@pytest.mark.anyio
+async def test_get_user_books_returns_books_for_user(book_service, mock_book_repository):
+    user_uid = "user-123"
+    books = [make_book(title="Book A"), make_book(title="Book B")]
+    mock_book_repository.get_by_user.return_value = books
 
-    response = await book_service.get_user_books(user_uid, session)
+    response = await book_service.get_user_books(user_uid)
 
     assert len(response) == 2
-    assert all(b.user_uid == user_uid for b in response)
+    mock_book_repository.get_by_user.assert_awaited_once_with(user_uid)
 
 
-@pytest.mark.asyncio
-async def test_get_user_books_returns_empty_for_unknown_user(book_service, mock_session):
-    session, result = mock_session
-    result.scalars.return_value.all.return_value = []
+@pytest.mark.anyio
+async def test_get_user_books_returns_empty_for_unknown_user(book_service, mock_book_repository):
+    unknown_user_uid = str(uuid.uuid4())
+    mock_book_repository.get_by_user.return_value = []
 
-    response = await book_service.get_user_books(str(uuid.uuid4()), session)
+    response = await book_service.get_user_books(unknown_user_uid)
 
     assert response == []
 
@@ -83,23 +76,21 @@ async def test_get_user_books_returns_empty_for_unknown_user(book_service, mock_
 # get_book
 # ─────────────────────────────────────────────
 
-@pytest.mark.asyncio
-async def test_get_book_returns_book_when_found(book_service, mock_session):
-    session, result = mock_session
+@pytest.mark.anyio
+async def test_get_book_returns_book_when_found(book_service, mock_book_repository):
     book = make_book()
-    result.scalars.return_value.first.return_value = book
+    mock_book_repository.get_by_id.return_value = book
 
-    response = await book_service.get_book(str(book.uid), session)
+    response = await book_service.get_book(str(book.uid))
 
     assert response == book
 
 
-@pytest.mark.asyncio
-async def test_get_book_returns_none_when_not_found(book_service, mock_session):
-    session, result = mock_session
-    result.scalars.return_value.first.return_value = None
+@pytest.mark.anyio
+async def test_get_book_returns_none_when_not_found(book_service, mock_book_repository):
+    mock_book_repository.get_by_id.return_value = None
 
-    response = await book_service.get_book(str(uuid.uuid4()), session)
+    response = await book_service.get_book(str(uuid.uuid4()))
 
     assert response is None
 
@@ -108,9 +99,8 @@ async def test_get_book_returns_none_when_not_found(book_service, mock_session):
 # create_book
 # ─────────────────────────────────────────────
 
-@pytest.mark.asyncio
-async def test_create_book_success(book_service):
-    session = AsyncMock()
+@pytest.mark.anyio
+async def test_create_book_success(book_service, mock_book_repository):
     user_uid = str(uuid.uuid4())
 
     book_data = BookCreateModel(
@@ -121,20 +111,26 @@ async def test_create_book_success(book_service):
         page_count=250,
         language="English",
     )
+    created_book = make_book(
+        title="New Book",
+        author="Author",
+        publisher="Publisher",
+        published_date=date(2024, 6, 15),
+        page_count=250,
+        language="English",
+    )
+    mock_book_repository.create.return_value = created_book
 
-    result = await book_service.create_book(book_data, user_uid, session)
+    result = await book_service.create_book(book_data, user_uid)
 
-    session.add.assert_called_once()
-    session.commit.assert_called_once()
     assert result.title == "New Book"
     assert result.author == "Author"
-    assert result.user_uid == user_uid
-    assert result.published_date == datetime(2024, 6, 15)
+    assert result.published_date == date(2024, 6, 15)
+    mock_book_repository.create.assert_awaited_once_with(book_data, user_uid)
 
 
-@pytest.mark.asyncio
-async def test_create_book_sets_published_date_correctly(book_service):
-    session = AsyncMock()
+@pytest.mark.anyio
+async def test_create_book_delegates_to_repository(book_service, mock_book_repository):
     book_data = BookCreateModel(
         title="Date Test",
         author="Author",
@@ -143,21 +139,30 @@ async def test_create_book_sets_published_date_correctly(book_service):
         page_count=100,
         language="English",
     )
+    user_uid = str(uuid.uuid4())
+    mock_book_repository.create.return_value = make_book(
+        title="Date Test",
+        author="Author",
+        publisher="Publisher",
+        published_date=date(2023, 12, 31),
+        page_count=100,
+        language="English",
+    )
 
-    result = await book_service.create_book(book_data, str(uuid.uuid4()), session)
+    result = await book_service.create_book(book_data, user_uid)
 
-    assert result.published_date == datetime(2023, 12, 31)
+    assert result.published_date == date(2023, 12, 31)
+    mock_book_repository.create.assert_awaited_once_with(book_data, user_uid)
 
 
 # ─────────────────────────────────────────────
 # update_book
 # ─────────────────────────────────────────────
 
-@pytest.mark.asyncio
-async def test_update_book_success(book_service, mock_session):
-    session, result = mock_session
-    book = make_book(title="Old Title", page_count=100)
-    result.scalars.return_value.first.return_value = book
+@pytest.mark.anyio
+async def test_update_book_success(book_service, mock_book_repository):
+    book = make_book(title="Updated Title", page_count=400, language="French")
+    mock_book_repository.update.return_value = book
 
     update_data = BookUpdateModel(
         title="Updated Title",
@@ -167,18 +172,17 @@ async def test_update_book_success(book_service, mock_session):
         language="French",
     )
 
-    response = await book_service.update_book(str(book.uid), update_data, session)
+    response = await book_service.update_book(str(book.uid), update_data)
 
-    session.commit.assert_called_once()
     assert response.title == "Updated Title"
     assert response.page_count == 400
     assert response.language == "French"
+    mock_book_repository.update.assert_awaited_once_with(str(book.uid), update_data)
 
 
-@pytest.mark.asyncio
-async def test_update_book_returns_none_when_not_found(book_service, mock_session):
-    session, result = mock_session
-    result.scalars.return_value.first.return_value = None
+@pytest.mark.anyio
+async def test_update_book_returns_none_when_not_found(book_service, mock_book_repository):
+    mock_book_repository.update.return_value = None
 
     update_data = BookUpdateModel(
         title="Title",
@@ -187,40 +191,38 @@ async def test_update_book_returns_none_when_not_found(book_service, mock_sessio
         page_count=100,
         language="English",
     )
+    missing_book_uid = str(uuid.uuid4())
 
-    response = await book_service.update_book(str(uuid.uuid4()), update_data, session)
+    response = await book_service.update_book(missing_book_uid, update_data)
 
     assert response is None
-    session.commit.assert_not_called()
+    mock_book_repository.update.assert_awaited_once_with(missing_book_uid, update_data)
 
 
 # ─────────────────────────────────────────────
 # delete_book
 # ─────────────────────────────────────────────
 
-@pytest.mark.asyncio
-async def test_delete_book_success(book_service, mock_session):
-    session, result = mock_session
-    book = make_book()
-    result.scalars.return_value.first.return_value = book
+@pytest.mark.anyio
+async def test_delete_book_success(book_service, mock_book_repository):
+    book_uid = str(uuid.uuid4())
+    mock_book_repository.delete.return_value = True
 
-    response = await book_service.delete_book(str(book.uid), session)
+    response = await book_service.delete_book(book_uid)
 
-    session.delete.assert_called_once_with(book)
-    session.commit.assert_called_once()
-    assert response == {}
+    assert response is True
+    mock_book_repository.delete.assert_awaited_once_with(book_uid)
 
 
-@pytest.mark.asyncio
-async def test_delete_book_returns_none_when_not_found(book_service, mock_session):
-    session, result = mock_session
-    result.scalars.return_value.first.return_value = None
+@pytest.mark.anyio
+async def test_delete_book_returns_false_when_not_found(book_service, mock_book_repository):
+    book_uid = str(uuid.uuid4())
+    mock_book_repository.delete.return_value = False
 
-    response = await book_service.delete_book(str(uuid.uuid4()), session)
+    response = await book_service.delete_book(book_uid)
 
-    assert response is None
-    session.delete.assert_not_called()
-    session.commit.assert_not_called()
+    assert response is False
+    mock_book_repository.delete.assert_awaited_once_with(book_uid)
 
 
 # ─────────────────────────────────────────────
