@@ -12,4 +12,4 @@ EXPOSE 8000
 
 ENV HOST 0.0.0.0
 
-CMD ["fastapi","run","src","--port","8000","--host","0.0.0.0"]
+CMD ["uvicorn","src:app","--host","0.0.0.0","--port","8000"]

@@ -11,3 +11,4 @@ pydantic-settings==2.4.0
 PyJWT==2.8.0
 ruff==0.4.8
 sqlmodel==0.0.18
+asyncpg
